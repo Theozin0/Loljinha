@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https: data:; connect-src https://*.supabase.co https://viacep.com.br; base-uri 'none'; object-src 'none'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Painel do administrador</title>
+  <link rel="icon" href="img/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="module" src="js/admin.js"></script>
+</head>
+<body class="admin">
+  <!-- LOGIN -->
+  <section id="login" class="login" hidden>
+    <form id="loginForm" class="card form login-card">
+      <img src="img/icon.svg" alt="" width="48" height="48">
+      <h1>Painel do lojista</h1>
+      <label>E-mail<input name="email" type="email" required autocomplete="username" maxlength="120"></label>
+      <label>Senha<input name="password" type="password" required autocomplete="current-password" maxlength="200"></label>
+      <button class="btn primary block">Entrar</button>
+      <p class="small muted center"><a href="./">← Voltar para a loja</a></p>
+    </form>
+  </section>
+
+  <!-- PAINEL -->
+  <div id="panel" hidden>
+    <header class="topbar">
+      <a href="./" class="brand" target="_blank" rel="noopener"><img src="img/icon.svg" alt="" width="30" height="30"><span>Painel</span></a>
+      <nav class="nav tabs">
+        <button data-tab="pedidos" class="active">Pedidos <b class="badge" id="badgePending" hidden></b></button>
+        <button data-tab="produtos">Produtos <b class="badge warn" id="badgeStock" hidden></b></button>
+        <button data-tab="sugestoes">Sugestões <b class="badge" id="badgeSugg" hidden></b></button>
+      </nav>
+      <div class="who"><span id="whoami"></span><button class="btn ghost sm" id="logout">Sair</button></div>
+    </header>
+
+    <main>
+      <!-- PEDIDOS -->
+      <section id="tab-pedidos" class="view">
+        <div class="toolbar">
+          <div class="chips" id="orderFilter">
+            <button class="chip active" data-status="pendente">Pendentes</button>
+            <button class="chip" data-status="confirmado">Confirmados</button>
+            <button class="chip" data-status="enviado">Enviados</button>
+            <button class="chip" data-status="concluido">Concluídos</button>
+            <button class="chip" data-status="recusado">Recusados</button>
+            <button class="chip" data-status="cancelado">Cancelados</button>
+            <button class="chip" data-status="">Todos</button>
+          </div>
+          <button class="btn ghost sm" id="refreshOrders">↻ Atualizar</button>
+        </div>
+        <div id="orders" class="orders"></div>
+      </section>
+
+      <!-- PRODUTOS -->
+      <section id="tab-produtos" class="view" hidden>
+        <div class="toolbar">
+          <div class="chips" id="productFilter">
+            <button class="chip active" data-type="">Todos</button>
+            <button class="chip" data-type="avulsa">Cartas avulsas</button>
+            <button class="chip" data-type="lacrado">Lacrados</button>
+            <button class="chip" data-type="baixo">Estoque baixo</button>
+          </div>
+          <div class="toolbar-right">
+            <input type="search" id="productSearch" placeholder="Buscar produto…" aria-label="Buscar produto">
+            <button class="btn primary" id="newProduct">+ Novo produto</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th></th><th>Produto</th><th>Tipo</th><th>Preço</th><th>Estoque</th><th>Visível</th><th></th></tr></thead>
+            <tbody id="productRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SUGESTÕES -->
+      <section id="tab-sugestoes" class="view" hidden>
+        <div class="toolbar"><h2>Sugestões dos clientes</h2></div>
+        <div id="suggestions" class="suggestions"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- FORM PRODUTO -->
+  <dialog id="productDialog" class="dialog wide">
+    <form id="productForm" class="form" method="dialog">
+      <div class="dialog-head"><h2 id="productFormTitle">Novo produto</h2><button type="button" class="icon-btn" data-close aria-label="Fechar">✕</button></div>
+      <div class="grid-2">
+        <label>Tipo
+          <select name="type" required>
+            <option value="avulsa">Carta avulsa</option>
+            <option value="lacrado">Produto lacrado</option>
+          </select>
+        </label>
+        <label>Nome<input name="name" required maxlength="150" placeholder="Ex.: Pikachu ex / Booster Box Surging Sparks"></label>
+        <label>Coleção / expansão<input name="set_name" maxlength="100" placeholder="Ex.: Escarlate e Violeta 151"></label>
+        <label data-only="avulsa">Número da carta<input name="card_number" maxlength="30" placeholder="Ex.: 025/165"></label>
+        <label data-only="avulsa">Raridade<input name="rarity" maxlength="60" placeholder="Ex.: Ilustração Rara"></label>
+        <label data-only="avulsa">Condição
+          <select name="condition">
+            <option value="">—</option>
+            <option>NM (Praticamente nova)</option>
+            <option>SP (Levemente jogada)</option>
+            <option>MP (Moderadamente jogada)</option>
+            <option>HP (Muito jogada)</option>
+            <option>D (Danificada)</option>
+          </select>
+        </label>
+        <label>Idioma
+          <select name="language">
+            <option value="">—</option>
+            <option>Português</option><option>Inglês</option><option>Japonês</option><option>Espanhol</option><option>Outro</option>
+          </select>
+        </label>
+        <label>Preço (R$)<input name="price" required inputmode="decimal" placeholder="0,00"></label>
+        <label>Estoque<input name="stock" required type="number" min="0" max="100000" step="1" value="1"></label>
+        <div class="span-2 image-field">
+          <div id="imagePreview" class="image-preview"></div>
+          <div class="image-inputs">
+            <label>Imagem<input type="file" id="imageFile" accept="image/jpeg,image/png,image/webp"></label>
+            <label>…ou link da imagem (https)<input name="image" maxlength="300" placeholder="https://…"></label>
+          </div>
+        </div>
+        <label class="span-2">Descrição<textarea name="description" rows="3" maxlength="2000"></textarea></label>
+        <label class="check"><input type="checkbox" name="active" checked> Visível na loja</label>
+        <label class="check"><input type="checkbox" name="featured"> Destaque</label>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" data-close>Cancelar</button>
+        <button class="btn primary" id="saveProduct">Salvar produto</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

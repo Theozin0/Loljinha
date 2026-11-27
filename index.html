@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https: data:; connect-src https://*.supabase.co https://viacep.com.br; base-uri 'none'; object-src 'none'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Loja TCG</title>
+  <meta name="description" content="Cartas avulsas e produtos lacrados de Pokémon TCG. Frete grátis para Jundiaí e Várzea Paulista.">
+  <link rel="icon" href="img/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <div class="ribbon">⚡ <strong>Frete grátis</strong> para <strong>Jundiaí</strong> e <strong>Várzea Paulista</strong></div>
+
+  <header class="topbar">
+    <a href="#loja" class="brand"><img src="img/icon.svg" alt="" width="34" height="34"><span data-store-name>Loja TCG</span></a>
+    <nav class="nav">
+      <a href="#loja" data-nav="loja">Loja</a>
+      <a href="#sugestoes" data-nav="sugestoes">Sugerir produto</a>
+      <a href="#pedido" data-nav="pedido">Meu pedido</a>
+    </nav>
+    <button class="cart-btn" id="openCart" aria-label="Abrir carrinho">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM5.2 4l.4 2H21l-2.2 8.4a2 2 0 0 1-1.9 1.6H8.1a2 2 0 0 1-2-1.6L3.6 2H1V0h4.2l.4 2"/></svg>
+      <span>Carrinho</span><b id="cartCount">0</b>
+    </button>
+  </header>
+
+  <main>
+    <!-- LOJA -->
+    <section id="view-loja" class="view">
+      <div class="hero">
+        <div>
+          <p class="eyebrow">Pokémon Trading Card Game</p>
+          <h1>Cartas avulsas e lacrados<br><span>pra completar sua coleção.</span></h1>
+          <p class="lead">Monte o carrinho, envie o pedido e a gente confirma o frete com você. Sem pagamento pelo site.</p>
+        </div>
+        <div class="hero-cards" aria-hidden="true"><i></i><i></i><i></i></div>
+      </div>
+
+      <div class="toolbar">
+        <div class="chips" role="tablist" aria-label="Filtrar por tipo">
+          <button class="chip active" data-filter="todos" role="tab">Todos</button>
+          <button class="chip" data-filter="avulsa" role="tab">Cartas avulsas</button>
+          <button class="chip" data-filter="lacrado" role="tab">Lacrados</button>
+        </div>
+        <div class="toolbar-right">
+          <input type="search" id="search" placeholder="Buscar carta, coleção…" aria-label="Buscar">
+          <select id="sort" aria-label="Ordenar">
+            <option value="destaque">Destaques</option>
+            <option value="menor">Menor preço</option>
+            <option value="maior">Maior preço</option>
+            <option value="nome">Nome A–Z</option>
+          </select>
+          <label class="check"><input type="checkbox" id="inStock" checked> Só em estoque</label>
+        </div>
+      </div>
+      <div id="grid" class="grid" aria-live="polite"></div>
+    </section>
+
+    <!-- SUGESTÕES -->
+    <section id="view-sugestoes" class="view narrow" hidden>
+      <h2>Sugerir um produto</h2>
+      <p class="muted">Procurando uma carta ou coleção que ainda não temos? Conta pra gente — avisamos quando chegar.</p>
+      <form id="suggestForm" class="card form">
+        <label>Seu nome<input name="name" required maxlength="80" autocomplete="name"></label>
+        <label>WhatsApp ou e-mail <small>(opcional, para avisarmos)</small><input name="contact" maxlength="120"></label>
+        <label>Produto desejado<input name="product" required maxlength="150" placeholder="Ex.: Charizard ex 199/165 — 151"></label>
+        <label>Detalhes<textarea name="details" rows="4" maxlength="1000" placeholder="Idioma, condição, quantidade, faixa de preço…"></textarea></label>
+        <input name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button class="btn primary">Enviar sugestão</button>
+      </form>
+    </section>
+
+    <!-- MEU PEDIDO -->
+    <section id="view-pedido" class="view narrow" hidden>
+      <h2>Acompanhar pedido</h2>
+      <p class="muted">Digite o código recebido ao finalizar a compra e os 4 últimos dígitos do seu telefone.</p>
+      <form id="lookupForm" class="card form row-form">
+        <label>Código<input name="code" required maxlength="12" placeholder="PK-XXXXXX"></label>
+        <label>Final do telefone<input name="phone" required inputmode="numeric" maxlength="20" placeholder="1234"></label>
+        <button class="btn primary">Consultar</button>
+      </form>
+      <div id="lookupResult"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p><span data-store-name>Loja TCG</span> · Jundiaí/SP · Frete grátis para Jundiaí e Várzea Paulista</p>
+    <p class="muted small">Pokémon e seus personagens são marcas registradas de seus respectivos donos. Loja independente.</p>
+  </footer>
+
+  <!-- CARRINHO -->
+  <div class="drawer-backdrop" id="cartBackdrop" hidden></div>
+  <aside class="drawer" id="cart" aria-label="Carrinho" aria-hidden="true">
+    <div class="drawer-head"><h2>Seu carrinho</h2><button class="icon-btn" id="closeCart" aria-label="Fechar">✕</button></div>
+    <div id="cartItems" class="cart-items"></div>
+    <div class="drawer-foot">
+      <div class="sum"><span>Subtotal</span><strong id="cartSubtotal">R$ 0,00</strong></div>
+      <p class="small muted">O frete é informado pelo lojista após o pedido. <strong>Grátis para Jundiaí e Várzea Paulista.</strong></p>
+      <button class="btn primary block" id="checkoutBtn">Finalizar compra</button>
+    </div>
+  </aside>
+
+  <!-- DETALHE -->
+  <dialog id="productDialog" class="dialog"></dialog>
+
+  <!-- CHECKOUT -->
+  <dialog id="checkoutDialog" class="dialog wide">
+    <form id="checkoutForm" class="form" method="dialog">
+      <div class="dialog-head"><h2>Finalizar compra</h2><button type="button" class="icon-btn" data-close aria-label="Fechar">✕</button></div>
+      <p class="notice">Nenhum pagamento é feito no site. Você envia o pedido, nós confirmamos a disponibilidade e o valor do frete pelo WhatsApp.</p>
+      <div class="grid-2">
+        <label class="span-2">Nome completo<input name="name" required minlength="3" maxlength="100" autocomplete="name"></label>
+        <label>WhatsApp (com DDD)<input name="phone" required inputmode="tel" maxlength="20" autocomplete="tel" placeholder="(11) 91234-5678"></label>
+        <label>E-mail <small>(opcional)</small><input name="email" type="email" maxlength="120" autocomplete="email"></label>
+        <label>CEP<input name="cep" required inputmode="numeric" maxlength="9" autocomplete="postal-code" placeholder="13200-000"></label>
+        <label>Cidade<input name="city" required maxlength="80" autocomplete="address-level2"></label>
+        <label class="span-2">Rua<input name="street" required maxlength="150" autocomplete="address-line1"></label>
+        <label>Número<input name="number" required maxlength="20"></label>
+        <label>Complemento<input name="complement" maxlength="80" autocomplete="address-line2"></label>
+        <label>Bairro<input name="district" required maxlength="80"></label>
+        <label>Estado (UF)<input name="state" required maxlength="2" autocomplete="address-level1" placeholder="SP"></label>
+        <label class="span-2">Observações<textarea name="notes" rows="2" maxlength="500" placeholder="Preferência de entrega, retirada etc."></textarea></label>
+      </div>
+      <div id="shippingInfo" class="shipping-info"></div>
+      <div class="sum big"><span>Subtotal</span><strong id="checkoutSubtotal"></strong></div>
+      <button class="btn primary block" id="placeOrder">Enviar pedido</button>
+    </form>
+  </dialog>
+
+  <dialog id="doneDialog" class="dialog"></dialog>
+</body>
+</html>
