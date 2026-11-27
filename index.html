@@ -47,24 +47,41 @@
         <img class="hero-img" data-hero-image alt="" hidden>
       </div>
 
-      <div class="toolbar sticky" id="filters">
-        <div class="chips scroll" role="tablist" aria-label="Filtrar por tipo">
-          <button class="chip active" data-filter="todos" role="tab">Todos</button>
-          <button class="chip" data-filter="avulsa" role="tab">Cartas avulsas</button>
-          <button class="chip" data-filter="lacrado" role="tab">Lacrados</button>
-          <label class="chip chip-check"><input type="checkbox" id="inStock" checked> Só em estoque</label>
+      <div class="shop-head">
+        <div>
+          <p class="shop-eyebrow">Loja</p>
+          <h2 class="shop-title" id="shopTitle">Todos os produtos</h2>
         </div>
-        <div class="toolbar-right">
-          <div class="search-wrap"><input type="search" id="search" placeholder="Buscar carta, coleção…" aria-label="Buscar produtos" enterkeyhint="search" autocomplete="off"><kbd aria-hidden="true">/</kbd></div>
-          <select id="sort" aria-label="Ordenar">
+        <div class="search-wrap shop-search">
+          <svg class="search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" id="search" placeholder="Buscar por nome, coleção ou número…" aria-label="Buscar produtos" enterkeyhint="search" autocomplete="off"><kbd aria-hidden="true">/</kbd>
+        </div>
+      </div>
+
+      <div class="toolbar sticky shop-bar" id="filters">
+        <div class="bar-left">
+          <div class="segmented" role="tablist" aria-label="Tipo de produto">
+            <button class="seg active" data-filter="todos" role="tab" aria-selected="true">Todos</button>
+            <button class="seg" data-filter="avulsa" role="tab" aria-selected="false">Cartas avulsas</button>
+            <button class="seg" data-filter="lacrado" role="tab" aria-selected="false">Lacrados</button>
+          </div>
+          <button type="button" class="filter-btn" id="openFilters" aria-haspopup="dialog">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+            Filtrar<b id="filterCount" hidden></b>
+          </button>
+        </div>
+        <p class="result-count" id="resultCount" aria-live="polite"></p>
+        <label class="sort-wrap"><span>Ordenar por</span>
+          <select id="sort">
             <option value="destaque">Destaques</option>
+            <option value="recentes">Mais recentes</option>
             <option value="menor">Menor preço</option>
             <option value="maior">Maior preço</option>
             <option value="nome">Nome A–Z</option>
           </select>
-        </div>
+        </label>
       </div>
-      <p class="result-count" id="resultCount" aria-live="polite"></p>
+      <div class="active-filters" id="activeFilters" hidden></div>
       <div id="grid" class="grid" aria-busy="true"></div>
     </section>
 
@@ -121,6 +138,22 @@
       <button class="btn primary block" id="checkoutBtn">Finalizar compra</button>
     </div>
   </aside>
+
+
+  <!-- FILTROS -->
+  <dialog id="filterDialog" class="dialog filter-dialog" aria-labelledby="filterTitle">
+    <form id="filterForm" method="dialog">
+      <div class="dialog-head">
+        <h2 id="filterTitle"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg> Filtrar</h2>
+        <button type="button" class="icon-btn" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div id="filterBody" class="filter-body"></div>
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" id="clearFilters">Limpar</button>
+        <button class="btn primary" id="applyFilters">Aplicar</button>
+      </div>
+    </form>
+  </dialog>
 
   <!-- DETALHE -->
   <dialog id="productDialog" class="dialog"></dialog>

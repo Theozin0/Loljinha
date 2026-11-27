@@ -2,7 +2,8 @@ import { h, brl, toast, STATUS_LABEL, formatDate, productDetail, productImage, d
 import { loadTheme, applyTheme } from './theme.js';
 
 const $ = (s) => document.querySelector(s);
-const state = { products: [], filter: 'todos', search: '', sort: 'destaque', inStock: true, cart: loadCart() };
+const newFilters = () => ({ langs: new Set(), conds: new Set(), sets: new Set(), min: null, max: null, inStock: true });
+const state = { products: [], filter: 'todos', search: '', sort: 'destaque', f: newFilters(), cart: loadCart() };
 const FREE = ['jundiai', 'varzea paulista'];
 const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 
@@ -27,7 +28,7 @@ function bump() {
 }
 
 // ---------- Vitrine
-const PRODUCTS_CACHE = 'products-cache-v1';
+const PRODUCTS_CACHE = 'products-cache-v2';
 function skeletons(n = 8) {
   $('#grid').replaceChildren(...Array.from({ length: n }, () => h('div', { class: 'product skeleton', 'aria-hidden': 'true' },
     h('div', { class: 'product-media' }),
@@ -47,7 +48,7 @@ function loadCachedProducts() {
 async function loadProducts() {
   try {
     if (!configured) throw new Error('Loja em configuração. Volte em breve!');
-    const rows = await db.select('products', 'select=id,type,name,set_name,card_number,condition,language,rarity,description,price_cents,stock,image,featured&active=eq.true&order=featured.desc,created_at.desc');
+    const rows = await db.select('products', 'select=id,type,name,set_name,card_number,condition,language,rarity,description,price_cents,stock,image,featured,created_at&active=eq.true&order=featured.desc,created_at.desc');
     setProducts(rows);
     try { localStorage.setItem(PRODUCTS_CACHE, JSON.stringify({ t: Date.now(), rows })); } catch { /* ignore */ }
     // remove do carrinho o que saiu de estoque
@@ -66,39 +67,151 @@ async function loadProducts() {
 
 function renderGrid() {
   const q = norm(state.search);
+  const f = state.f;
   let list = state.products.filter((p) =>
     (state.filter === 'todos' || p.type === state.filter) &&
-    (!state.inStock || p.stock > 0) &&
+    (!f.inStock || p.stock > 0) &&
+    (!f.langs.size || f.langs.has(p.language)) &&
+    (!f.conds.size || f.conds.has(p.condition)) &&
+    (!f.sets.size || f.sets.has(p.set_name)) &&
+    (f.min == null || p.price_cents >= f.min * 100) &&
+    (f.max == null || p.price_cents <= f.max * 100) &&
     (!q || norm([p.name, p.set_name, p.card_number, p.rarity, p.description].join(' ')).includes(q)));
   const sorters = {
     menor: (a, b) => a.price_cents - b.price_cents,
     maior: (a, b) => b.price_cents - a.price_cents,
     nome: (a, b) => a.name.localeCompare(b.name, 'pt-BR'),
+    recentes: (a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')),
   };
   if (sorters[state.sort]) list = [...list].sort(sorters[state.sort]);
   const grid = $('#grid');
   const total = list.length;
-  $('#resultCount').textContent = state.products.length
-    ? `${total} ${total === 1 ? 'produto' : 'produtos'}${q ? ` para “${state.search.trim()}”` : ''}` : '';
+  $('#resultCount').replaceChildren(...(state.products.length
+    ? [h('b', {}, total), ` ${total === 1 ? 'item encontrado' : 'itens encontrados'}${q ? ` para “${state.search.trim()}”` : ''}`] : []));
+  renderActiveFilters();
   if (!list.length) return grid.replaceChildren(h('p', { class: 'empty' }, state.products.length ? 'Nenhum produto encontrado com esses filtros.' : 'Em breve novos produtos por aqui!'));
   grid.replaceChildren(...list.map((p, i) => productCard(p, i)));
 }
 
 function productCard(p, i = 99) {
-  const out = p.stock <= 0;
+  const out = p.stock <= 0, lang = langBadge(p.language), cond = condCode(p.condition);
   return h('article', { class: `product ${out ? 'out' : ''}` },
     h('button', { class: 'product-media', onclick: () => openProduct(p), 'aria-label': `Ver ${p.name}` },
       productImage(p, 'thumb', { eager: i < 4 }),
       h('span', { class: `tag ${p.type}` }, p.type === 'lacrado' ? 'Lacrado' : 'Avulsa'),
-      p.featured ? h('span', { class: 'tag star' }, '★ Destaque') : null),
+      p.featured ? h('span', { class: 'tag star' }, '★') : null,
+      lang ? h('span', { class: 'pill-badge lang', title: p.language }, h('small', {}, lang[0]), lang[1]) : null,
+      cond ? h('span', { class: 'pill-badge cond', title: p.condition }, cond) : null),
     h('div', { class: 'product-body' },
-      h('h3', {}, p.name),
-      h('p', { class: 'detail' }, productDetail(p) || ' '),
-      h('div', { class: 'product-foot' },
-        h('div', {},
-          h('strong', { class: 'price' }, brl(p.price_cents)),
-          h('small', { class: `stock ${p.stock <= 2 && !out ? 'low' : ''}` }, out ? 'Esgotado' : p.stock <= 2 ? `Últimas ${p.stock}!` : `${p.stock} em estoque`)),
-        h('button', { class: 'btn primary sm', disabled: out, onclick: () => addToCart(p) }, out ? 'Esgotado' : 'Adicionar'))));
+      h('h3', {}, p.name, p.card_number ? h('span', { class: 'num' }, ` (${p.card_number})`) : null),
+      h('p', { class: 'detail' }, [p.set_name, p.rarity].filter(Boolean).join(' · ') || ' '),
+      h('div', { class: 'price-row' },
+        h('span', { class: `units ${out ? 'low' : ''}` }, out ? 'Esgotado' : `${p.stock} un.`),
+        h('strong', { class: 'price' }, brl(p.price_cents))),
+      h('button', { class: 'btn primary buy', disabled: out, onclick: () => addToCart(p) }, out ? 'Esgotado' : 'Comprar')));
+}
+
+// ---------- Filtros (idioma, condição, coleção, preço)
+const LANGS = {
+  'Português': ['BR', 'PT-BR'], 'Inglês': ['US', 'ENG'], 'Japonês': ['JP', 'JP'], 'Espanhol': ['ES', 'ESP'],
+  'Chinês': ['CN', 'CH'], 'Coreano': ['KR', 'KOR'], 'Francês': ['FR', 'FRA'], 'Alemão': ['DE', 'ALE'], 'Italiano': ['IT', 'ITA'],
+};
+function langBadge(l) { return l ? (LANGS[l] || [l.slice(0, 2).toUpperCase(), l]) : null; }
+function condCode(c) { const m = /^([A-Z]{1,3})\b/.exec(c || ''); return m ? m[1] : (c ? c.slice(0, 3).toUpperCase() : ''); }
+function condLabel(c) { const m = /^([A-Z]{1,3})\s*\((.+)\)\s*$/.exec(c || ''); return m ? `${m[1]} · ${m[2]}` : c; }
+const TITLES = { todos: 'Todos os produtos', avulsa: 'Cartas Avulsas', lacrado: 'Lacrados' };
+
+let draft = null;
+const cloneF = (f) => ({ ...f, langs: new Set(f.langs), conds: new Set(f.conds), sets: new Set(f.sets) });
+const activeCount = (f) => f.langs.size + f.conds.size + f.sets.size + (f.min != null || f.max != null ? 1 : 0) + (f.inStock ? 0 : 1);
+
+function priceBounds(list) {
+  if (!list.length) return null;
+  const prices = list.map((p) => p.price_cents / 100);
+  return { lo: Math.floor(Math.min(...prices)), hi: Math.ceil(Math.max(...prices)) };
+}
+function countBy(list, key) {
+  const m = new Map();
+  for (const p of list) if (p[key]) m.set(p[key], (m.get(p[key]) || 0) + 1);
+  return [...m.entries()];
+}
+
+function openFilters() {
+  draft = cloneF(state.f);
+  renderFilterBody();
+  $('#filterDialog').showModal();
+}
+function renderFilterBody() {
+  const base = state.products.filter((p) => (state.filter === 'todos' || p.type === state.filter) && (!draft.inStock || p.stock > 0));
+  const section = (title, entries, set, label = (v) => v, prefix) => entries.length ? h('fieldset', { class: 'f-group' },
+    h('legend', {}, title),
+    h('div', { class: 'f-chips' }, entries.map(([v, n]) => {
+      const pre = prefix?.(v);
+      return h('button', { type: 'button', class: `f-chip ${set.has(v) ? 'on' : ''}`, 'aria-pressed': String(set.has(v)),
+        onclick: (e) => { set.has(v) ? set.delete(v) : set.add(v); e.currentTarget.classList.toggle('on'); e.currentTarget.setAttribute('aria-pressed', String(set.has(v))); } },
+        pre ? h('small', { class: 'f-pre' }, pre) : null, label(v), h('span', { class: 'f-n' }, n));
+    }))) : null;
+
+  const order = (arr, pref) => arr.sort((a, b) => (pref.indexOf(a[0]) + 1 || 99) - (pref.indexOf(b[0]) + 1 || 99) || b[1] - a[1]);
+  const langs = order(countBy(base, 'language'), Object.keys(LANGS));
+  const conds = order(countBy(base, 'condition'), ['NM', 'SP', 'MP', 'HP', 'D'].map((c) => base.find((p) => condCode(p.condition) === c)?.condition).filter(Boolean));
+  const sets = countBy(base, 'set_name').sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'pt-BR')).slice(0, 24);
+
+  const bounds = priceBounds(base);
+  let priceSec = null;
+  if (bounds && bounds.hi > bounds.lo) {
+    const step = Math.max(1, Math.round((bounds.hi - bounds.lo) / 200));
+    bounds.hi = bounds.lo + Math.ceil((bounds.hi - bounds.lo) / step) * step;   // o máximo cai exatamente num passo
+    const lo = Math.max(bounds.lo, Math.min(draft.min ?? bounds.lo, bounds.hi)), hi = Math.min(bounds.hi, Math.max(draft.max ?? bounds.hi, bounds.lo));
+    const rMin = h('input', { type: 'range', min: bounds.lo, max: bounds.hi, step, value: lo, 'aria-label': 'Preço mínimo' });
+    const rMax = h('input', { type: 'range', min: bounds.lo, max: bounds.hi, step, value: hi, 'aria-label': 'Preço máximo' });
+    const fill = h('i'), summary = h('p', { class: 'f-range-sum' }), minL = h('b'), maxL = h('b');
+    const reais = (v) => `R$ ${Number(v).toLocaleString('pt-BR')}`;
+    const sync = (which) => {
+      let a = Number(rMin.value), b = Number(rMax.value);
+      if (a > b) { if (which === 'min') rMin.value = a = b; else rMax.value = b = a; }
+      const pct = (v) => ((v - bounds.lo) / (bounds.hi - bounds.lo)) * 100;
+      fill.style.left = `${pct(a)}%`; fill.style.right = `${100 - pct(b)}%`;
+      summary.textContent = `${reais(a)} – ${reais(b)}`; minL.textContent = reais(a); maxL.textContent = reais(b);
+      draft.min = a > bounds.lo ? a : null; draft.max = b < bounds.hi ? b : null;
+    };
+    rMin.addEventListener('input', () => sync('min')); rMax.addEventListener('input', () => sync('max'));
+    priceSec = h('fieldset', { class: 'f-group' }, h('legend', {}, 'Preço'), summary,
+      h('div', { class: 'range2' }, h('div', { class: 'range2-track' }, fill), rMin, rMax),
+      h('div', { class: 'f-range-labels' }, h('span', {}, 'Mín: ', minL), h('span', {}, 'Máx: ', maxL)));
+    sync();
+  }
+
+  const stockToggle = h('label', { class: 'f-switch' },
+    h('input', { type: 'checkbox', checked: draft.inStock, onchange: (e) => { draft.inStock = e.target.checked; renderFilterBody(); } }),
+    h('span', { class: 'f-switch-ui', 'aria-hidden': 'true' }), 'Mostrar só itens em estoque');
+
+  $('#filterBody').replaceChildren(
+    section('Idioma', langs, draft.langs, (v) => langBadge(v)[1], (v) => langBadge(v)[0]),
+    section('Condição', conds, draft.conds, condLabel),
+    section('Coleção', sets, draft.sets),
+    priceSec,
+    h('fieldset', { class: 'f-group' }, h('legend', {}, 'Disponibilidade'), stockToggle));
+}
+function applyFilters(f) {
+  state.f = f;
+  const n = activeCount(f);
+  $('#filterCount').textContent = n; $('#filterCount').hidden = !n;
+  $('#openFilters').classList.toggle('on', n > 0);
+  renderGrid();
+}
+function renderActiveFilters() {
+  const f = state.f, pills = [];
+  const pill = (text, remove) => pills.push(h('button', { type: 'button', class: 'a-pill', onclick: remove, 'aria-label': `Remover filtro ${text}` }, text, h('span', { 'aria-hidden': 'true' }, '✕')));
+  for (const v of f.langs) pill(langBadge(v)[1], () => { f.langs.delete(v); applyFilters(f); });
+  for (const v of f.conds) pill(condCode(v) || v, () => { f.conds.delete(v); applyFilters(f); });
+  for (const v of f.sets) pill(v, () => { f.sets.delete(v); applyFilters(f); });
+  const r = (v) => `R$ ${Number(v).toLocaleString('pt-BR')}`;
+  if (f.min != null || f.max != null) pill(f.min != null && f.max != null ? `${r(f.min)} – ${r(f.max)}` : f.min != null ? `A partir de ${r(f.min)}` : `Até ${r(f.max)}`, () => { f.min = f.max = null; applyFilters(f); });
+  if (!f.inStock) pill('Incluindo esgotados', () => { f.inStock = true; applyFilters(f); });
+  const box = $('#activeFilters');
+  if (pills.length > 1) pills.push(h('button', { type: 'button', class: 'link', onclick: () => applyFilters(newFilters()) }, 'Limpar tudo'));
+  box.replaceChildren(...pills); box.hidden = !pills.length;
 }
 
 function openProduct(p) {
@@ -297,7 +410,12 @@ async function init() {
     window.parent.postMessage({ type: 'preview-ready' }, location.origin);
   } else loadTheme({ storeName: CONFIG.storeName });
 
+  $('#openFilters').addEventListener('click', openFilters);
+  $('#filterForm').addEventListener('submit', (e) => { e.preventDefault(); applyFilters(draft); $('#filterDialog').close(); });
+  $('#clearFilters').addEventListener('click', () => { draft = newFilters(); renderFilterBody(); });
   document.querySelectorAll('[data-filter]').forEach((b) => b.addEventListener('click', () => {
+    $('#shopTitle').textContent = TITLES[b.dataset.filter] || TITLES.todos;
+    document.querySelectorAll('[data-filter]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
     state.filter = b.dataset.filter;
     document.querySelectorAll('[data-filter]').forEach((x) => x.classList.toggle('active', x === b));
     renderGrid();
@@ -314,7 +432,6 @@ async function init() {
     }
   });
   $('#sort').addEventListener('change', (e) => { state.sort = e.target.value; renderGrid(); });
-  $('#inStock').addEventListener('change', (e) => { state.inStock = e.target.checked; renderGrid(); });
 
   $('#openCart').addEventListener('click', () => openCart(true));
   $('#openCartBottom').addEventListener('click', () => openCart(true));
