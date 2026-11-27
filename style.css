@@ -396,3 +396,16 @@ html, body { overflow-x: clip; }
 .toolbar-right select { padding-right: 1.6rem; text-overflow: ellipsis; }
 .table td:nth-child(2) small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 34ch; }
 .table td:nth-child(2) { min-width: 9rem; }
+
+/* ---------- Lupa na imagem do produto */
+.pd-media.zoomable { position: relative; overflow: visible; cursor: zoom-in; touch-action: none; user-select: none; -webkit-user-select: none; }
+.pd-media.zoomable .pd-img { border-radius: inherit; -webkit-user-drag: none; }
+.pd-media.zooming { cursor: none; }
+.zoom-lens { position: absolute; left: 0; top: 0; z-index: 5; width: clamp(150px, 9rem + 6vw, 240px); aspect-ratio: 1; border-radius: 50%; pointer-events: none;
+  border: 3px solid #fff; background-color: var(--card); background-repeat: no-repeat;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.18), 0 14px 34px rgba(0,0,0,.38), inset 0 0 18px rgba(0,0,0,.12);
+  opacity: 0; transform: translate(-50%, -50%) scale(.55); transition: opacity .15s, transform .18s var(--ease); }
+.zoom-lens.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.zoom-hint { position: absolute; left: 50%; bottom: .6rem; transform: translateX(-50%); white-space: nowrap; pointer-events: none;
+  font-size: var(--step--2); font-weight: 600; color: #fff; background: rgba(0,0,0,.62); padding: .28rem .7rem; border-radius: 999px; transition: opacity .2s; }
+.pd-media.zooming .zoom-hint { opacity: 0; }

@@ -111,7 +111,7 @@ function openProduct(p) {
     h('div', { class: 'dialog-head' }, h('span', { class: `tag inline ${p.type}` }, p.type === 'lacrado' ? 'Produto lacrado' : 'Carta avulsa'),
       h('button', { class: 'icon-btn', onclick: () => dlg.close(), 'aria-label': 'Fechar' }, '✕')),
     h('div', { class: 'pd' },
-      h('div', { class: 'pd-media' }, productImage(p, 'pd-img')),
+      magnifier(h('div', { class: 'pd-media' }, productImage(p, 'pd-img', { eager: true }))),
       h('div', { class: 'pd-info' },
         h('h2', {}, p.name),
         h('dl', { class: 'specs' }, rows.flatMap(([k, v]) => [h('dt', {}, k), h('dd', {}, v)])),
@@ -367,4 +367,59 @@ function setupScrollUX() {
   addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
   toTop.addEventListener('click', () => { scrollTo({ top: 0, behavior: 'smooth' }); $('#conteudo').focus({ preventScroll: true }); });
   update();
+}
+
+// ---------- Lupa: amplia a imagem do produto ao passar o mouse (ou tocar e arrastar no celular)
+function magnifier(media) {
+  const img = media.querySelector('img');
+  if (!img) return media;
+  const touchOnly = matchMedia('(hover: none)').matches;
+  const lens = h('div', { class: 'zoom-lens', 'aria-hidden': 'true' });
+  const hint = h('span', { class: 'zoom-hint', 'aria-hidden': 'true' }, touchOnly ? '🔍 Toque e arraste para ampliar' : '🔍 Passe o mouse para ampliar · role para ajustar');
+  media.classList.add('zoomable');
+  media.append(lens, hint);
+  let zoom = 2.6, last = null;
+
+  // área real da imagem dentro do quadro (object-fit: contain + padding)
+  const box = () => {
+    const r = img.getBoundingClientRect(), cs = getComputedStyle(img);
+    const pl = parseFloat(cs.paddingLeft), pr = parseFloat(cs.paddingRight), pt = parseFloat(cs.paddingTop), pb = parseFloat(cs.paddingBottom);
+    const cw = r.width - pl - pr, ch = r.height - pt - pb;
+    const nw = img.naturalWidth || cw, nh = img.naturalHeight || ch;
+    const k = Math.min(cw / nw, ch / nh), w = nw * k, hh = nh * k;
+    return { x: r.left + pl + (cw - w) / 2, y: r.top + pt + (ch - hh) / 2, w, h: hh };
+  };
+  const hide = () => { lens.classList.remove('on'); media.classList.remove('zooming'); last = null; };
+  const show = (cx, cy, touch) => {
+    if (!img.complete || !img.naturalWidth) return;
+    const b = box();
+    if (cx < b.x || cx > b.x + b.w || cy < b.y || cy > b.y + b.h) return hide();
+    last = { cx, cy, touch };
+    const m = media.getBoundingClientRect(), size = lens.clientWidth;
+    const lift = touch ? lens.offsetHeight * 0.75 : 0;       // no toque, a lupa fica acima do dedo
+    lens.style.left = `${cx - m.left}px`;
+    lens.style.top = `${cy - m.top - lift}px`;
+    lens.style.backgroundImage = `url(${JSON.stringify(img.currentSrc || img.src)})`;
+    lens.style.backgroundSize = `${b.w * zoom}px ${b.h * zoom}px`;
+    lens.style.backgroundPosition = `${-((cx - b.x) * zoom - size / 2)}px ${-((cy - b.y) * zoom - size / 2)}px`;
+    lens.classList.add('on'); media.classList.add('zooming');
+  };
+
+  media.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'mouse' || e.pointerType === 'pen' || e.buttons) show(e.clientX, e.clientY, e.pointerType === 'touch');
+  });
+  media.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'touch') { media.setPointerCapture(e.pointerId); show(e.clientX, e.clientY, true); }
+  });
+  media.addEventListener('pointerleave', hide);
+  media.addEventListener('pointerup', (e) => { if (e.pointerType === 'touch') hide(); });
+  media.addEventListener('pointercancel', hide);
+  // roda do mouse ajusta o nível de zoom (1,5× a 5×)
+  media.addEventListener('wheel', (e) => {
+    if (!last) return;
+    e.preventDefault();
+    zoom = Math.min(5, Math.max(1.5, zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15)));
+    show(last.cx, last.cy, last.touch);
+  }, { passive: false });
+  return media;
 }
