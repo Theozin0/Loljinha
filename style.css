@@ -401,7 +401,7 @@ html, body { overflow-x: clip; }
 .pd-media.zoomable { position: relative; overflow: visible; cursor: zoom-in; touch-action: none; user-select: none; -webkit-user-select: none; }
 .pd-media.zoomable .pd-img { border-radius: inherit; -webkit-user-drag: none; }
 .pd-media.zooming { cursor: none; }
-.zoom-lens { position: absolute; left: 0; top: 0; z-index: 5; width: clamp(150px, 9rem + 6vw, 240px); aspect-ratio: 1; border-radius: 50%; pointer-events: none;
+.zoom-lens { position: fixed; left: 0; top: 0; z-index: 50; width: clamp(220px, 11rem + 12vw, 360px); aspect-ratio: 1; border-radius: 50%; pointer-events: none;
   border: 3px solid #fff; background-color: var(--card); background-repeat: no-repeat;
   box-shadow: 0 0 0 1px rgba(0,0,0,.18), 0 14px 34px rgba(0,0,0,.38), inset 0 0 18px rgba(0,0,0,.12);
   opacity: 0; transform: translate(-50%, -50%) scale(.55); transition: opacity .15s, transform .18s var(--ease); }
