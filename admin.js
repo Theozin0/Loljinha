@@ -376,7 +376,7 @@ async function uploadTo(field, input) {
   const file = input.files[0];
   if (!file) return;
   await handle(async () => {
-    try { theme.draft[field] = await uploadImage(file); fillTheme(); changed(); toast('Imagem enviada — clique em Salvar para publicar'); }
+    try { theme.draft[field] = await uploadImage(file, { maxSide: field === 'logo' ? 600 : 1600 }); fillTheme(); changed(); toast('Imagem enviada — clique em Salvar para publicar'); }
     finally { input.value = ''; }
   });
 }

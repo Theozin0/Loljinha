@@ -21,14 +21,35 @@ function addToCart(p, qty = 1) {
   toast(`${p.name} adicionado ao carrinho`);
   bump();
 }
-function bump() { const b = $('#cartCount'); b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); }
+function bump() {
+  for (const b of [$('#cartCount'), $('#cartCountBottom')]) { b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); }
+  navigator.vibrate?.(12);
+}
 
 // ---------- Vitrine
+const PRODUCTS_CACHE = 'products-cache-v1';
+function skeletons(n = 8) {
+  $('#grid').replaceChildren(...Array.from({ length: n }, () => h('div', { class: 'product skeleton', 'aria-hidden': 'true' },
+    h('div', { class: 'product-media' }),
+    h('div', { class: 'product-body' }, h('div', { class: 'sk-line w80' }), h('div', { class: 'sk-line w60' }), h('div', { class: 'sk-line w40' })))));
+}
+function setProducts(rows) {
+  state.products = [...rows.filter((p) => p.stock > 0), ...rows.filter((p) => p.stock <= 0)];
+}
+/** Mostra na hora a última lista conhecida (cache) e atualiza em segundo plano. */
+function loadCachedProducts() {
+  try {
+    const c = JSON.parse(localStorage.getItem(PRODUCTS_CACHE) || 'null');
+    if (c && Date.now() - c.t < 24 * 3600_000 && Array.isArray(c.rows)) { setProducts(c.rows); renderGrid(); renderCart(); return true; }
+  } catch { /* ignore */ }
+  return false;
+}
 async function loadProducts() {
   try {
     if (!configured) throw new Error('Loja em configuração. Volte em breve!');
     const rows = await db.select('products', 'select=id,type,name,set_name,card_number,condition,language,rarity,description,price_cents,stock,image,featured&active=eq.true&order=featured.desc,created_at.desc');
-    state.products = [...rows.filter((p) => p.stock > 0), ...rows.filter((p) => p.stock <= 0)];
+    setProducts(rows);
+    try { localStorage.setItem(PRODUCTS_CACHE, JSON.stringify({ t: Date.now(), rows })); } catch { /* ignore */ }
     // remove do carrinho o que saiu de estoque
     for (const [id, qty] of Object.entries(state.cart)) {
       const p = product(id);
@@ -38,8 +59,9 @@ async function loadProducts() {
     saveCart();
     renderGrid();
   } catch (e) {
-    $('#grid').replaceChildren(h('p', { class: 'empty' }, e.message));
-  }
+    if (!state.products.length) $('#grid').replaceChildren(h('p', { class: 'empty' }, e.message));
+    $('#resultCount').textContent = '';
+  } finally { $('#grid').setAttribute('aria-busy', 'false'); }
 }
 
 function renderGrid() {
@@ -55,15 +77,18 @@ function renderGrid() {
   };
   if (sorters[state.sort]) list = [...list].sort(sorters[state.sort]);
   const grid = $('#grid');
+  const total = list.length;
+  $('#resultCount').textContent = state.products.length
+    ? `${total} ${total === 1 ? 'produto' : 'produtos'}${q ? ` para “${state.search.trim()}”` : ''}` : '';
   if (!list.length) return grid.replaceChildren(h('p', { class: 'empty' }, state.products.length ? 'Nenhum produto encontrado com esses filtros.' : 'Em breve novos produtos por aqui!'));
-  grid.replaceChildren(...list.map(productCard));
+  grid.replaceChildren(...list.map((p, i) => productCard(p, i)));
 }
 
-function productCard(p) {
+function productCard(p, i = 99) {
   const out = p.stock <= 0;
   return h('article', { class: `product ${out ? 'out' : ''}` },
     h('button', { class: 'product-media', onclick: () => openProduct(p), 'aria-label': `Ver ${p.name}` },
-      productImage(p),
+      productImage(p, 'thumb', { eager: i < 4 }),
       h('span', { class: `tag ${p.type}` }, p.type === 'lacrado' ? 'Lacrado' : 'Avulsa'),
       p.featured ? h('span', { class: 'tag star' }, '★ Destaque') : null),
     h('div', { class: 'product-body' },
@@ -105,6 +130,7 @@ function renderCart() {
   const count = lines.reduce((s, l) => s + l.qty, 0);
   const subtotal = lines.reduce((s, l) => s + l.qty * l.p.price_cents, 0);
   $('#cartCount').textContent = count;
+  $('#cartCountBottom').textContent = count; $('#cartCountBottom').hidden = !count;
   $('#cartSubtotal').textContent = brl(subtotal);
   $('#checkoutBtn').disabled = !count;
   $('#cartItems').replaceChildren(...(lines.length ? lines.map(({ p, qty }) =>
@@ -245,9 +271,17 @@ async function lookupOrder(ev) {
 function route() {
   const view = (location.hash || '#loja').slice(1);
   const valid = ['loja', 'sugestoes', 'pedido'].includes(view) ? view : 'loja';
-  document.querySelectorAll('.view').forEach((v) => { v.hidden = v.id !== `view-${valid}`; });
-  document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('active', a.dataset.nav === valid));
-  window.scrollTo({ top: 0 });
+  const current = document.querySelector('.view:not([hidden])')?.id;
+  const apply = () => {
+    document.querySelectorAll('.view').forEach((v) => { v.hidden = v.id !== `view-${valid}`; });
+    document.querySelectorAll('[data-nav]').forEach((a) => {
+      a.classList.toggle('active', a.dataset.nav === valid);
+      if (a.dataset.nav === valid) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+  };
+  if (current === `view-${valid}`) return apply();
+  if (document.startViewTransition && current) document.startViewTransition(apply); else apply();
+  window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 // ---------- Init
@@ -268,11 +302,22 @@ async function init() {
     document.querySelectorAll('[data-filter]').forEach((x) => x.classList.toggle('active', x === b));
     renderGrid();
   }));
-  $('#search').addEventListener('input', (e) => { state.search = e.target.value; renderGrid(); });
+  let searchTimer;
+  $('#search').addEventListener('input', (e) => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { state.search = e.target.value; renderGrid(); }, 120);
+  });
+  // atalho: "/" abre a busca
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && !e.target.closest('input, textarea, select, [contenteditable]') && !document.querySelector('dialog[open]')) {
+      e.preventDefault(); if (location.hash && location.hash !== '#loja') location.hash = 'loja'; $('#search').focus();
+    }
+  });
   $('#sort').addEventListener('change', (e) => { state.sort = e.target.value; renderGrid(); });
   $('#inStock').addEventListener('change', (e) => { state.inStock = e.target.checked; renderGrid(); });
 
   $('#openCart').addEventListener('click', () => openCart(true));
+  $('#openCartBottom').addEventListener('click', () => openCart(true));
   $('#closeCart').addEventListener('click', () => openCart(false));
   $('#cartBackdrop').addEventListener('click', () => openCart(false));
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') openCart(false); });
@@ -293,6 +338,33 @@ async function init() {
   window.addEventListener('hashchange', route);
   route();
   renderCart();
+  setupScrollUX();
+  if (!loadCachedProducts()) skeletons();
   await loadProducts();
 }
 init();
+
+// ---------- Rolagem: cabeçalho que encolhe/esconde, filtros fixos, voltar ao topo
+function setupScrollUX() {
+  const root = document.documentElement, top = $('.topbar'), filters = $('#filters'), toTop = $('#toTop');
+  const small = matchMedia('(max-width: 47.99rem)');
+  new ResizeObserver(([e]) => root.style.setProperty('--header-h', `${Math.round(e.borderBoxSize?.[0]?.blockSize ?? top.offsetHeight)}px`)).observe(top);
+  let lastY = scrollY, ticking = false;
+  const update = () => {
+    ticking = false;
+    const y = scrollY, dy = y - lastY;
+    top.classList.toggle('scrolled', y > 8);
+    const busy = $('#cart').classList.contains('open') || document.querySelector('dialog[open]') || document.activeElement === $('#search');
+    if (small.matches && !busy && Math.abs(dy) > 6) root.classList.toggle('nav-hidden', dy > 0 && y > 220);
+    if (y < 80) root.classList.remove('nav-hidden');
+    if (filters && !filters.closest('[hidden]')) {
+      const headerH = root.classList.contains('nav-hidden') ? 0 : top.offsetHeight;
+      filters.classList.toggle('stuck', filters.getBoundingClientRect().top <= headerH + 1 && y > 200);
+    }
+    toTop.classList.toggle('show', y > 900);
+    lastY = y;
+  };
+  addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+  toTop.addEventListener('click', () => { scrollTo({ top: 0, behavior: 'smooth' }); $('#conteudo').focus({ preventScroll: true }); });
+  update();
+}

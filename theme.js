@@ -89,6 +89,7 @@ export function applyTheme(raw, { storeName } = {}) {
   r.setProperty('--radius', `${s.radius}px`);
   r.setProperty('--font', FONTS[s.font].stack);
   document.documentElement.classList.toggle('theme-dark', dark);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', c.primary);
 
   // logo
   document.querySelectorAll('[data-logo]').forEach((img) => {

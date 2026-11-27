@@ -4,18 +4,25 @@
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https: data:; connect-src https://*.supabase.co https://viacep.com.br; base-uri 'none'; object-src 'none'; form-action 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Loja TCG</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#16215c">
+  <title>Pocket Boutique TCG — Pokémon TCG</title>
   <meta name="description" content="Cartas avulsas e produtos lacrados de Pokémon TCG. Frete grátis para Jundiaí e Várzea Paulista.">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://gwigbteuyuaucjabajrk.supabase.co" crossorigin>
+  <link rel="dns-prefetch" href="https://gwigbteuyuaucjabajrk.supabase.co">
   <link rel="stylesheet" href="style.css">
+  <link rel="modulepreload" href="config.js">
+  <link rel="modulepreload" href="common.js">
+  <link rel="modulepreload" href="theme.js">
   <script type="module" src="app.js"></script>
 </head>
 <body data-page="loja">
+  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
   <div class="ribbon" data-text="ribbon">⚡ Frete grátis para Jundiaí e Várzea Paulista</div>
 
   <header class="topbar">
-    <a href="#loja" class="brand"><img src="icon.svg" alt="" width="34" height="34" data-logo><span data-store-name>Loja TCG</span></a>
+    <a href="#loja" class="brand"><img src="icon.svg" alt="" width="34" height="34" data-logo><span data-store-name>Pocket Boutique TCG</span></a>
     <nav class="nav">
       <a href="#loja" data-nav="loja">Loja</a>
       <a href="#sugestoes" data-nav="sugestoes">Sugerir produto</a>
@@ -27,7 +34,7 @@
     </button>
   </header>
 
-  <main>
+  <main id="conteudo" tabindex="-1">
     <!-- LOJA -->
     <section id="view-loja" class="view">
       <div class="hero">
@@ -40,24 +47,25 @@
         <img class="hero-img" data-hero-image alt="" hidden>
       </div>
 
-      <div class="toolbar">
-        <div class="chips" role="tablist" aria-label="Filtrar por tipo">
+      <div class="toolbar sticky" id="filters">
+        <div class="chips scroll" role="tablist" aria-label="Filtrar por tipo">
           <button class="chip active" data-filter="todos" role="tab">Todos</button>
           <button class="chip" data-filter="avulsa" role="tab">Cartas avulsas</button>
           <button class="chip" data-filter="lacrado" role="tab">Lacrados</button>
+          <label class="chip chip-check"><input type="checkbox" id="inStock" checked> Só em estoque</label>
         </div>
         <div class="toolbar-right">
-          <input type="search" id="search" placeholder="Buscar carta, coleção…" aria-label="Buscar">
+          <div class="search-wrap"><input type="search" id="search" placeholder="Buscar carta, coleção…" aria-label="Buscar produtos" enterkeyhint="search" autocomplete="off"><kbd aria-hidden="true">/</kbd></div>
           <select id="sort" aria-label="Ordenar">
             <option value="destaque">Destaques</option>
             <option value="menor">Menor preço</option>
             <option value="maior">Maior preço</option>
             <option value="nome">Nome A–Z</option>
           </select>
-          <label class="check"><input type="checkbox" id="inStock" checked> Só em estoque</label>
         </div>
       </div>
-      <div id="grid" class="grid" aria-live="polite"></div>
+      <p class="result-count" id="resultCount" aria-live="polite"></p>
+      <div id="grid" class="grid" aria-busy="true"></div>
     </section>
 
     <!-- SUGESTÕES -->
@@ -88,9 +96,19 @@
   </main>
 
   <footer class="footer">
-    <p><span data-store-name>Loja TCG</span> · <span data-text="footer">Jundiaí/SP · Frete grátis para Jundiaí e Várzea Paulista</span></p>
+    <p><span data-store-name>Pocket Boutique TCG</span> · <span data-text="footer">Jundiaí/SP · Frete grátis para Jundiaí e Várzea Paulista</span></p>
     <p class="muted small">Pokémon e seus personagens são marcas registradas de seus respectivos donos. Loja independente.</p>
   </footer>
+
+
+  <!-- NAVEGAÇÃO INFERIOR (celular) -->
+  <nav class="bottom-nav" aria-label="Navegação principal">
+    <a href="#loja" data-nav="loja"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>Loja</a>
+    <a href="#sugestoes" data-nav="sugestoes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>Sugerir</a>
+    <a href="#pedido" data-nav="pedido"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg>Pedido</a>
+    <button type="button" id="openCartBottom" aria-label="Abrir carrinho"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.6 12.2a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.5L22 7H6"/></svg>Carrinho<b id="cartCountBottom" hidden>0</b></button>
+  </nav>
+  <button type="button" class="to-top" id="toTop" aria-label="Voltar ao topo"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg></button>
 
   <!-- CARRINHO -->
   <div class="drawer-backdrop" id="cartBackdrop" hidden></div>

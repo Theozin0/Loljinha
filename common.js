@@ -56,8 +56,15 @@ export function formatDate(d) {
 export function productDetail(p) {
   return [p.set_name, p.card_number && `#${p.card_number}`, p.rarity, p.condition, p.language].filter(Boolean).join(' · ');
 }
-export function productImage(p, cls = 'thumb') {
-  if (p.image) return h('img', { class: cls, src: p.image, alt: p.name, loading: 'lazy', referrerpolicy: 'no-referrer' });
+export function productImage(p, cls = 'thumb', { eager = false } = {}) {
+  if (p.image) {
+    const img = h('img', { class: cls, alt: p.name, decoding: 'async', loading: eager ? 'eager' : 'lazy', referrerpolicy: 'no-referrer', 'data-loading': '' });
+    if (eager) img.setAttribute('fetchpriority', 'high');
+    const done = () => img.removeAttribute('data-loading');
+    img.addEventListener('load', done, { once: true }); img.addEventListener('error', done, { once: true });
+    img.src = p.image;
+    return img;
+  }
   return h('div', { class: `${cls} thumb-empty ${p.type}`, 'aria-hidden': 'true' },
     h('span', {}, p.type === 'lacrado' ? 'LACRADO' : 'CARTA'));
 }
@@ -159,12 +166,28 @@ export const db = {
 };
 
 const PUBLIC_PREFIX = `${BASE}/storage/v1/object/public/${BUCKET}/`;
-export async function uploadImage(file) {
+/** Reduz e converte para WebP antes de enviar (fotos de celular de 4 MB viram ~150 KB). */
+async function optimizeImage(file, maxSide) {
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+    const w = Math.round(bmp.width * scale), hgt = Math.round(bmp.height * scale);
+    const canvas = Object.assign(document.createElement('canvas'), { width: w, height: hgt });
+    canvas.getContext('2d').drawImage(bmp, 0, 0, w, hgt);
+    bmp.close?.();
+    const blob = await new Promise((r) => canvas.toBlob(r, 'image/webp', 0.84));
+    if (blob && blob.type === 'image/webp' && (blob.size < file.size || scale < 1)) return blob;
+  } catch { /* navegador sem suporte: envia o original */ }
+  return file;
+}
+export async function uploadImage(original, { maxSide = 1400 } = {}) {
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(original.type)) throw new ApiError('Envie uma imagem JPG, PNG ou WEBP', 400);
+  if (original.size > 15_000_000) throw new ApiError('Imagem muito grande (máx. 15 MB)', 413);
+  const file = await optimizeImage(original, maxSide);
   const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[file.type];
-  if (!ext) throw new ApiError('Envie uma imagem JPG, PNG ou WEBP', 400);
-  if (file.size > 5_000_000) throw new ApiError('Imagem muito grande (máx. 5 MB)', 413);
+  if (file.size > 5_000_000) throw new ApiError('Imagem muito grande mesmo após otimizar (máx. 5 MB)', 413);
   const name = `${crypto.randomUUID()}.${ext}`;
-  await request(`/storage/v1/object/${BUCKET}/${name}`, { method: 'POST', body: file, raw: true, headers: { 'Content-Type': file.type, 'Cache-Control': '604800' } });
+  await request(`/storage/v1/object/${BUCKET}/${name}`, { method: 'POST', body: file, raw: true, headers: { 'Content-Type': file.type, 'Cache-Control': 'max-age=31536000' } });
   return PUBLIC_PREFIX + name;
 }
 export async function deleteImage(url) {
