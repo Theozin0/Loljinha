@@ -1,5 +1,5 @@
-import { h, brl, toast, STATUS_LABEL, formatDate, productDetail, productImage, db, CONFIG, configured, orderMessage, waLink } from './common.js';
-import { loadTheme, applyTheme } from './theme.js';
+import { h, brl, toast, STATUS_LABEL, formatDate, productDetail, productImage, db, CONFIG, configured, orderMessage, waLink } from './common.js?v=20261126-2345';
+import { loadTheme, applyTheme } from './theme.js?v=20261126-2345';
 
 const $ = (s) => document.querySelector(s);
 const newFilters = () => ({ langs: new Set(), conds: new Set(), sets: new Set(), min: null, max: null, inStock: true });

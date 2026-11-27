@@ -1,6 +1,6 @@
 // Aparência do site: cores, fontes, logo e textos editáveis pelo painel (aba "Aparência").
 // Tudo é validado antes de aplicar: cores só em #RRGGBB, imagens só https, textos via textContent.
-import { db, configured } from './common.js';
+import { db, configured } from './common.js?v=20261126-2345';
 
 export const DEFAULTS = {
   storeName: '',
