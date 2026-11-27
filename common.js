@@ -3,7 +3,8 @@
 import { CONFIG } from './config.js';
 
 export { CONFIG };
-const BASE = CONFIG.supabaseUrl.replace(/\/+$/, '');
+// aceita a URL com ou sem /rest/v1 no final
+const BASE = String(CONFIG.supabaseUrl || '').trim().replace(/\/+$/, '').replace(/\/(rest|auth|storage)\/v1$/, '');
 const KEY = CONFIG.supabaseKey;
 const BUCKET = 'produtos';
 export const configured = /^https:\/\//.test(BASE) && !BASE.includes('SEU-PROJETO') && !KEY.includes('COLE_AQUI');

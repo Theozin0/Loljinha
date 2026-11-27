@@ -7,15 +7,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <title>Painel do administrador</title>
-  <link rel="icon" href="img/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/style.css">
-  <script type="module" src="js/admin.js"></script>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="admin.js"></script>
 </head>
 <body class="admin">
   <!-- LOGIN -->
   <section id="login" class="login" hidden>
     <form id="loginForm" class="card form login-card">
-      <img src="img/icon.svg" alt="" width="48" height="48">
+      <img src="icon.svg" alt="" width="48" height="48">
       <h1>Painel do lojista</h1>
       <label>E-mail<input name="email" type="email" required autocomplete="username" maxlength="120"></label>
       <label>Senha<input name="password" type="password" required autocomplete="current-password" maxlength="200"></label>
@@ -27,7 +27,7 @@
   <!-- PAINEL -->
   <div id="panel" hidden>
     <header class="topbar">
-      <a href="./" class="brand" target="_blank" rel="noopener"><img src="img/icon.svg" alt="" width="30" height="30"><span>Painel</span></a>
+      <a href="./" class="brand" target="_blank" rel="noopener"><img src="icon.svg" alt="" width="30" height="30"><span>Painel</span></a>
       <nav class="nav tabs">
         <button data-tab="pedidos" class="active">Pedidos <b class="badge" id="badgePending" hidden></b></button>
         <button data-tab="produtos">Produtos <b class="badge warn" id="badgeStock" hidden></b></button>
