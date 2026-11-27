@@ -186,12 +186,13 @@ function renderFilterBody() {
     h('input', { type: 'checkbox', checked: draft.inStock, onchange: (e) => { draft.inStock = e.target.checked; renderFilterBody(); } }),
     h('span', { class: 'f-switch-ui', 'aria-hidden': 'true' }), 'Mostrar só itens em estoque');
 
-  $('#filterBody').replaceChildren(
+  $('#filterBody').replaceChildren(...[
     section('Idioma', langs, draft.langs, (v) => langBadge(v)[1], (v) => langBadge(v)[0]),
     section('Condição', conds, draft.conds, condLabel),
     section('Coleção', sets, draft.sets),
     priceSec,
-    h('fieldset', { class: 'f-group' }, h('legend', {}, 'Disponibilidade'), stockToggle));
+    h('fieldset', { class: 'f-group' }, h('legend', {}, 'Disponibilidade'), stockToggle),
+  ].filter(Boolean));   // seções sem opções (ex.: preço quando só há 1 valor) não aparecem
 }
 function applyFilters(f) {
   state.f = f;
