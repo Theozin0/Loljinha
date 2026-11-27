@@ -9,7 +9,7 @@ export const CONFIG = {
   storeWhatsapp: '5511911718301',
 
   // Supabase → Project Settings → Data API → Project URL
-  supabaseUrl: 'https://gwigbteuyuaucjabajrk.supabase.co/rest/v1/',
+  supabaseUrl: 'https://gwigbteuyuaucjabajrk.supabase.co',
 
   // Supabase → Project Settings → API Keys → Publishable key (sb_publishable_...)
   // Esta chave é PÚBLICA por natureza; quem protege os dados são as regras do setup.sql.
