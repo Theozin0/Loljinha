@@ -1,5 +1,5 @@
-import { h, brl, toast, STATUS_LABEL, formatDate, productDetail, productImage, db, CONFIG, configured, orderMessage, waLink } from './common.js?v=20261126-2350';
-import { loadTheme, applyTheme } from './theme.js?v=20261126-2350';
+import { h, brl, toast, STATUS_LABEL, formatDate, productDetail, productImage, db, CONFIG, configured, orderMessage, waLink } from './common.js?v=20261126-2358';
+import { loadTheme, applyTheme } from './theme.js?v=20261126-2358';
 
 const $ = (s) => document.querySelector(s);
 const newFilters = () => ({ langs: new Set(), conds: new Set(), sets: new Set(), min: null, max: null, inStock: true });
@@ -513,19 +513,12 @@ function magnifier(media) {
     const b = box();
     if (cx < b.x || cx > b.x + b.w || cy < b.y || cy > b.y + b.h) return hide();
     last = { cx, cy, touch };
-    const size = lens.clientWidth, full = lens.offsetWidth, r = full / 2, gap = 10;
-    // limites: área visível da janela do produto (nunca sai da tela)
-    const d = media.closest('dialog')?.getBoundingClientRect() || { left: 0, top: 0, right: innerWidth, bottom: innerHeight };
-    const minX = Math.max(0, d.left) + r + gap, maxX = Math.min(innerWidth, d.right) - r - gap;
-    const minY = Math.max(0, d.top) + r + gap, maxY = Math.min(innerHeight, d.bottom) - r - gap;
-    let lx = cx, ly = cy;
-    if (touch) {
-      // no toque, a lupa fica acima do dedo; sem espaço em cima, vai para baixo
-      const lift = r + 36;
-      ly = cy - lift >= minY ? cy - lift : cy + lift;
-    }
-    lx = Math.min(Math.max(lx, minX), Math.max(minX, maxX));
-    ly = Math.min(Math.max(ly, minY), Math.max(minY, maxY));
+    const size = lens.clientWidth, r = lens.offsetWidth / 2, gap = 8;
+    // como antes: no toque a lupa fica sempre acima do dedo (e segue o mouse no computador);
+    // só "encosta" na borda da tela para nunca sair dela
+    const lift = touch ? lens.offsetHeight * 0.75 : 0;
+    const lx = Math.min(Math.max(cx, r + gap), innerWidth - r - gap);
+    const ly = Math.min(Math.max(cy - lift, r + gap), innerHeight - r - gap);
     lens.style.left = `${lx}px`;
     lens.style.top = `${ly}px`;
     lens.style.backgroundImage = `url(${JSON.stringify(img.currentSrc || img.src)})`;

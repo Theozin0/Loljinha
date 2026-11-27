@@ -1,6 +1,6 @@
 // Utilidades compartilhadas + cliente mínimo do Supabase (sem bibliotecas externas).
 // Todo texto entra na página via textContent — nunca innerHTML com dados.
-import { CONFIG } from './config.js?v=20261126-2350';
+import { CONFIG } from './config.js?v=20261126-2358';
 
 export { CONFIG };
 // aceita a URL com ou sem /rest/v1 no final
