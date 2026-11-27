@@ -1,5 +1,5 @@
-import { h, brl, toast, parseBRL, centsToInput, STATUS_LABEL, formatDate, productDetail, productImage, db, auth, configured, orderMessage, waLink, waPhone, uploadImage, deleteImage } from './common.js?v=20261126-2345';
-import { DEFAULTS, PRESETS, FONTS, normalize, applyTheme, loadTheme, saveTheme } from './theme.js?v=20261126-2345';
+import { h, brl, toast, parseBRL, centsToInput, STATUS_LABEL, formatDate, productDetail, productImage, db, auth, configured, orderMessage, waLink, waPhone, uploadImage, deleteImage } from './common.js?v=20261126-2350';
+import { DEFAULTS, PRESETS, FONTS, normalize, applyTheme, loadTheme, saveTheme } from './theme.js?v=20261126-2350';
 
 const $ = (s) => document.querySelector(s);
 const state = { orderStatus: 'pendente', products: [], productType: '', productSearch: '', editing: null };
