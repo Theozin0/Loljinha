@@ -1,4 +1,5 @@
 import { h, brl, toast, STATUS_LABEL, formatDate, productDetail, productImage, db, CONFIG, configured, orderMessage, waLink } from './common.js';
+import { loadTheme, applyTheme } from './theme.js';
 
 const $ = (s) => document.querySelector(s);
 const state = { products: [], filter: 'todos', search: '', sort: 'destaque', inStock: true, cart: loadCart() };
@@ -253,6 +254,14 @@ function route() {
 async function init() {
   document.querySelectorAll('[data-store-name]').forEach((el) => { el.textContent = CONFIG.storeName; });
   document.title = `${CONFIG.storeName} — Pokémon TCG`;
+  // Prévia ao vivo da aba "Aparência" (o painel abre a loja num quadro e envia o rascunho)
+  const preview = new URLSearchParams(location.search).has('previa') && window.parent !== window;
+  if (preview) {
+    window.addEventListener('message', (e) => {
+      if (e.origin === location.origin && e.data?.type === 'theme-preview') applyTheme(e.data.settings, { storeName: CONFIG.storeName });
+    });
+    window.parent.postMessage({ type: 'preview-ready' }, location.origin);
+  } else loadTheme({ storeName: CONFIG.storeName });
 
   document.querySelectorAll('[data-filter]').forEach((b) => b.addEventListener('click', () => {
     state.filter = b.dataset.filter;

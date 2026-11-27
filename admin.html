@@ -15,7 +15,7 @@
   <!-- LOGIN -->
   <section id="login" class="login" hidden>
     <form id="loginForm" class="card form login-card">
-      <img src="icon.svg" alt="" width="48" height="48">
+      <img src="icon.svg" alt="" width="48" height="48" data-logo>
       <h1>Painel do lojista</h1>
       <label>E-mail<input name="email" type="email" required autocomplete="username" maxlength="120"></label>
       <label>Senha<input name="password" type="password" required autocomplete="current-password" maxlength="200"></label>
@@ -27,11 +27,12 @@
   <!-- PAINEL -->
   <div id="panel" hidden>
     <header class="topbar">
-      <a href="./" class="brand" target="_blank" rel="noopener"><img src="icon.svg" alt="" width="30" height="30"><span>Painel</span></a>
+      <a href="./" class="brand" target="_blank" rel="noopener"><img src="icon.svg" alt="" width="30" height="30" data-logo><span>Painel</span></a>
       <nav class="nav tabs">
         <button data-tab="pedidos" class="active">Pedidos <b class="badge" id="badgePending" hidden></b></button>
         <button data-tab="produtos">Produtos <b class="badge warn" id="badgeStock" hidden></b></button>
         <button data-tab="sugestoes">Sugestões <b class="badge" id="badgeSugg" hidden></b></button>
+        <button data-tab="aparencia">🎨 Aparência</button>
       </nav>
       <div class="who"><span id="whoami"></span><button class="btn ghost sm" id="logout">Sair</button></div>
     </header>
@@ -80,6 +81,86 @@
       <section id="tab-sugestoes" class="view" hidden>
         <div class="toolbar"><h2>Sugestões dos clientes</h2></div>
         <div id="suggestions" class="suggestions"></div>
+      </section>
+
+      <!-- APARÊNCIA -->
+      <section id="tab-aparencia" class="view" hidden>
+        <div id="appearanceError"></div>
+        <div class="appearance" id="appearance">
+          <form id="themeForm" class="form appearance-form" autocomplete="off">
+            <fieldset>
+              <legend>Identidade</legend>
+              <label>Nome da loja <small>(vazio = usa o do config.js)</small><input name="storeName" maxlength="60"></label>
+              <div>
+                <p class="field-label">Logo</p>
+                <div class="upload-row">
+                  <div class="upload-preview" id="logoPreview"></div>
+                  <div class="upload-actions">
+                    <label class="btn ghost sm">Enviar logo<input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp" hidden></label>
+                    <button type="button" class="link danger" id="logoRemove">remover</button>
+                    <small class="muted">PNG com fundo transparente fica melhor (máx. 5 MB).</small>
+                  </div>
+                </div>
+              </div>
+              <label class="check"><input type="checkbox" name="showName"> Mostrar o nome da loja ao lado do logo</label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Cores</legend>
+              <p class="small muted">Comece por um tema pronto e ajuste o que quiser:</p>
+              <div class="presets" id="presets"></div>
+              <div class="colors-grid" id="colorFields"></div>
+              <p class="small muted">O texto sobre cada cor fica claro ou escuro automaticamente, para manter a leitura.</p>
+            </fieldset>
+
+            <fieldset>
+              <legend>Estilo</legend>
+              <label>Fonte<select name="font" id="fontSelect"></select></label>
+              <label>Arredondamento dos cantos
+                <div class="range-row"><input type="range" name="radius" min="0" max="28" step="1"><b id="radiusVal"></b></div>
+              </label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Textos da loja</legend>
+              <label>Faixa do topo<input name="t_ribbon" maxlength="120"></label>
+              <label>Chamada pequena do banner<input name="t_eyebrow" maxlength="120"></label>
+              <label>Título do banner<input name="t_title" maxlength="120"></label>
+              <label>Título — parte colorida<input name="t_highlight" maxlength="120"></label>
+              <label>Descrição do banner<textarea name="t_lead" rows="3" maxlength="300"></textarea></label>
+              <label>Rodapé<input name="t_footer" maxlength="120"></label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Imagem do banner</legend>
+              <div class="upload-row">
+                <div class="upload-preview" id="heroPreview"></div>
+                <div class="upload-actions">
+                  <label class="btn ghost sm">Enviar imagem<input type="file" id="heroFile" accept="image/png,image/jpeg,image/webp" hidden></label>
+                  <button type="button" class="link danger" id="heroRemove">remover</button>
+                  <small class="muted">Substitui as cartas decorativas do banner (ex.: foto dos seus produtos).</small>
+                </div>
+              </div>
+            </fieldset>
+
+            <div class="save-bar">
+              <button type="button" class="btn ghost sm" id="themeReset">Restaurar padrão</button>
+              <button type="button" class="btn ghost sm" id="themeDiscard">Descartar</button>
+              <button class="btn primary" id="themeSave">Salvar aparência</button>
+            </div>
+          </form>
+
+          <div class="preview-pane">
+            <div class="preview-bar">
+              <strong>Prévia ao vivo <small class="muted">(só você vê até salvar)</small></strong>
+              <div class="chips">
+                <button type="button" class="chip active" data-device="desktop">Computador</button>
+                <button type="button" class="chip" data-device="mobile">Celular</button>
+              </div>
+            </div>
+            <iframe id="previewFrame" class="preview-frame" title="Prévia da loja"></iframe>
+          </div>
+        </div>
       </section>
     </main>
   </div>

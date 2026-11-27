@@ -1,4 +1,5 @@
 import { h, brl, toast, parseBRL, centsToInput, STATUS_LABEL, formatDate, productDetail, productImage, db, auth, configured, orderMessage, waLink, waPhone, uploadImage, deleteImage } from './common.js';
+import { DEFAULTS, PRESETS, FONTS, normalize, applyTheme, loadTheme, saveTheme } from './theme.js';
 
 const $ = (s) => document.querySelector(s);
 const state = { orderStatus: 'pendente', products: [], productType: '', productSearch: '', editing: null };
@@ -39,7 +40,7 @@ $('#logout').addEventListener('click', () => handle(async () => { await auth.log
 document.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => {
   document.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('active', x === b));
   document.querySelectorAll('main > .view').forEach((v) => { v.hidden = v.id !== `tab-${b.dataset.tab}`; });
-  ({ pedidos: loadOrders, produtos: loadProducts, sugestoes: loadSuggestions })[b.dataset.tab]();
+  ({ pedidos: loadOrders, produtos: loadProducts, sugestoes: loadSuggestions, aparencia: loadAppearance })[b.dataset.tab]();
   loadStats();
 }));
 
@@ -285,4 +286,124 @@ async function loadSuggestions() {
   });
 }
 
+// ---------- Aparência
+const COLOR_LABELS = {
+  primary: 'Principal (cabeçalho)', secondary: 'Secundária (degradê)', accent: 'Destaque (faixa, carrinho)',
+  button: 'Botões', bg: 'Fundo da página', card: 'Cartões', text: 'Texto',
+};
+const theme = { saved: null, draft: null };
+const tf = $('#themeForm');
+const clone = (o) => JSON.parse(JSON.stringify(o));
+const HEXRE = /^#[0-9a-f]{6}$/i;
+
+// monta as partes fixas do formulário
+$('#presets').replaceChildren(...Object.entries(PRESETS).map(([name, colors]) =>
+  h('button', { type: 'button', class: 'preset', title: `Aplicar tema ${name}`, onclick: () => { theme.draft.colors = { ...colors }; fillTheme(); changed(); } },
+    h('span', { class: 'swatches' }, ['primary', 'secondary', 'accent', 'button', 'bg'].map((k) => {
+      const i = h('i'); i.style.background = colors[k]; return i;
+    })),
+    name)));
+$('#colorFields').replaceChildren(...Object.entries(COLOR_LABELS).map(([k, label]) => {
+  const picker = h('input', { type: 'color', 'aria-label': label });
+  const hex = h('input', { type: 'text', maxlength: 7, spellcheck: false, 'aria-label': `${label} (código)` });
+  picker.addEventListener('input', () => { hex.value = picker.value; theme.draft.colors[k] = picker.value; changed(); });
+  hex.addEventListener('input', () => {
+    const v = hex.value.trim().startsWith('#') ? hex.value.trim() : `#${hex.value.trim()}`;
+    if (HEXRE.test(v)) { picker.value = v.toLowerCase(); theme.draft.colors[k] = v.toLowerCase(); changed(); }
+  });
+  picker.id = `color-${k}`; hex.id = `hex-${k}`;
+  return h('label', { class: 'color-field' }, picker, h('span', {}, label), hex);
+}));
+$('#fontSelect').replaceChildren(...Object.entries(FONTS).map(([k, f]) => {
+  const o = h('option', { value: k }, f.label); o.style.fontFamily = f.stack; return o;
+}));
+
+function imgPreview(box, url, empty) {
+  box.replaceChildren(url ? h('img', { src: url, alt: '' }) : h('span', { class: 'small muted' }, empty));
+}
+function fillTheme() {
+  const d = theme.draft;
+  tf.storeName.value = d.storeName; tf.showName.checked = d.showName;
+  for (const k of Object.keys(COLOR_LABELS)) { $(`#color-${k}`).value = d.colors[k]; $(`#hex-${k}`).value = d.colors[k]; }
+  tf.font.value = d.font; tf.radius.value = d.radius; $('#radiusVal').textContent = `${d.radius}px`;
+  for (const k of Object.keys(DEFAULTS.texts)) tf[`t_${k}`].value = d.texts[k];
+  imgPreview($('#logoPreview'), d.logo, 'sem logo');
+  imgPreview($('#heroPreview'), d.heroImage, 'cartas');
+  $('#logoRemove').hidden = !d.logo; $('#heroRemove').hidden = !d.heroImage;
+}
+function readTheme() {
+  const d = theme.draft;
+  d.storeName = tf.storeName.value; d.showName = tf.showName.checked;
+  d.font = tf.font.value; d.radius = Number(tf.radius.value); $('#radiusVal').textContent = `${d.radius}px`;
+  for (const k of Object.keys(DEFAULTS.texts)) d.texts[k] = tf[`t_${k}`].value;
+}
+const isDirty = () => JSON.stringify(normalize(theme.draft)) !== JSON.stringify(theme.saved);
+function changed() {
+  sendPreview();
+  const btn = $('#themeSave');
+  btn.replaceChildren(...(isDirty() ? [h('span', { class: 'dirty-dot' }), 'Salvar aparência'] : ['Salvo ✓']));
+  btn.disabled = !isDirty();
+}
+function sendPreview() {
+  const f = $('#previewFrame');
+  if (theme.draft && f.contentWindow) f.contentWindow.postMessage({ type: 'theme-preview', settings: theme.draft }, location.origin);
+}
+window.addEventListener('message', (e) => { if (e.origin === location.origin && e.data?.type === 'preview-ready') sendPreview(); });
+tf.addEventListener('input', (e) => { if (e.target.type === 'color' || e.target.closest('.color-field') || e.target.type === 'file') return; readTheme(); changed(); });
+
+async function loadAppearance() {
+  $('#appearanceError').replaceChildren();
+  try {
+    const rows = await db.select('site_settings', 'select=data&id=eq.1');
+    if (!rows?.length) throw new Error('missing');
+    theme.saved = normalize(rows[0].data);
+  } catch (e) {
+    if (e.status === 401) { showLogin(); return; }
+    $('#appearance').hidden = true;
+    $('#appearanceError').replaceChildren(h('div', { class: 'card notice' },
+      h('strong', {}, 'Falta um passo no Supabase. '),
+      'Abra Supabase → SQL Editor, escolha o papel "postgres", cole o conteúdo do arquivo atualizacao-aparencia.sql (está no seu repositório) e clique em Run. Depois volte nesta aba.'));
+    return;
+  }
+  $('#appearance').hidden = false;
+  if (!theme.draft || !isDirty()) theme.draft = clone(theme.saved);
+  fillTheme(); changed();
+  const f = $('#previewFrame');
+  if (!f.src) f.src = 'index.html?previa=1';
+}
+
+async function uploadTo(field, input) {
+  const file = input.files[0];
+  if (!file) return;
+  await handle(async () => {
+    try { theme.draft[field] = await uploadImage(file); fillTheme(); changed(); toast('Imagem enviada — clique em Salvar para publicar'); }
+    finally { input.value = ''; }
+  });
+}
+$('#logoFile').addEventListener('change', (e) => uploadTo('logo', e.target));
+$('#heroFile').addEventListener('change', (e) => uploadTo('heroImage', e.target));
+$('#logoRemove').addEventListener('click', () => { theme.draft.logo = ''; fillTheme(); changed(); });
+$('#heroRemove').addEventListener('click', () => { theme.draft.heroImage = ''; fillTheme(); changed(); });
+$('#themeDiscard').addEventListener('click', () => { theme.draft = clone(theme.saved); fillTheme(); changed(); });
+$('#themeReset').addEventListener('click', () => {
+  if (!confirm('Voltar cores, fontes, textos e imagens para o padrão? (só vale depois de salvar)')) return;
+  theme.draft = normalize({}); fillTheme(); changed();
+});
+tf.addEventListener('submit', (e) => {
+  e.preventDefault();
+  handle(async () => {
+    $('#themeSave').disabled = true;
+    theme.saved = await saveTheme(theme.draft);
+    theme.draft = clone(theme.saved);
+    applyTheme(theme.saved);
+    changed();
+    toast('Aparência publicada na loja!');
+  });
+});
+document.querySelectorAll('[data-device]').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-device]').forEach((x) => x.classList.toggle('active', x === b));
+  $('#previewFrame').classList.toggle('mobile', b.dataset.device === 'mobile');
+}));
+
+loadTheme();
 boot();

@@ -11,11 +11,11 @@
   <link rel="stylesheet" href="style.css">
   <script type="module" src="app.js"></script>
 </head>
-<body>
-  <div class="ribbon">⚡ <strong>Frete grátis</strong> para <strong>Jundiaí</strong> e <strong>Várzea Paulista</strong></div>
+<body data-page="loja">
+  <div class="ribbon" data-text="ribbon">⚡ Frete grátis para Jundiaí e Várzea Paulista</div>
 
   <header class="topbar">
-    <a href="#loja" class="brand"><img src="icon.svg" alt="" width="34" height="34"><span data-store-name>Loja TCG</span></a>
+    <a href="#loja" class="brand"><img src="icon.svg" alt="" width="34" height="34" data-logo><span data-store-name>Loja TCG</span></a>
     <nav class="nav">
       <a href="#loja" data-nav="loja">Loja</a>
       <a href="#sugestoes" data-nav="sugestoes">Sugerir produto</a>
@@ -32,11 +32,12 @@
     <section id="view-loja" class="view">
       <div class="hero">
         <div>
-          <p class="eyebrow">Pokémon Trading Card Game</p>
-          <h1>Cartas avulsas e lacrados<br><span>pra completar sua coleção.</span></h1>
-          <p class="lead">Monte o carrinho, envie o pedido e a gente confirma o frete com você. Sem pagamento pelo site.</p>
+          <p class="eyebrow" data-text="eyebrow">Pokémon Trading Card Game</p>
+          <h1><span class="h-title" data-text="title">Cartas avulsas e lacrados</span><br><span data-text="highlight">pra completar sua coleção.</span></h1>
+          <p class="lead" data-text="lead">Monte o carrinho, envie o pedido e a gente confirma o frete com você. Sem pagamento pelo site.</p>
         </div>
         <div class="hero-cards" aria-hidden="true"><i></i><i></i><i></i></div>
+        <img class="hero-img" data-hero-image alt="" hidden>
       </div>
 
       <div class="toolbar">
@@ -87,7 +88,7 @@
   </main>
 
   <footer class="footer">
-    <p><span data-store-name>Loja TCG</span> · Jundiaí/SP · Frete grátis para Jundiaí e Várzea Paulista</p>
+    <p><span data-store-name>Loja TCG</span> · <span data-text="footer">Jundiaí/SP · Frete grátis para Jundiaí e Várzea Paulista</span></p>
     <p class="muted small">Pokémon e seus personagens são marcas registradas de seus respectivos donos. Loja independente.</p>
   </footer>
 

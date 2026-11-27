@@ -93,3 +93,11 @@ css/style.css         visual
 supabase/setup.sql    banco de dados + regras de segurança
 .github/workflows/    automação que mantém o Supabase ativo
 ```
+
+---
+
+## Aba "Aparência" (logo, cores, textos)
+
+No painel (`admin.html`), a aba **🎨 Aparência** permite trocar o logo, as cores (há 8 temas prontos), a fonte, o arredondamento, os textos do banner, a faixa do topo, o rodapé e a imagem do banner. Tudo aparece numa **prévia ao vivo** e só vai para a loja quando você clica em **Salvar aparência**.
+
+**Antes do primeiro uso**, rode o arquivo `atualizacao-aparencia.sql` uma vez em Supabase → SQL Editor, com o papel **postgres** selecionado.
