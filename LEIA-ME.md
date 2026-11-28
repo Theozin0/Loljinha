@@ -51,12 +51,9 @@ supabaseKey: 'sb_publishable_...',
 
 ## Passo 4: Evitar que o Supabase "durma"
 
-O plano gratuito do Supabase **pausa o projeto depois de 1 semana sem uso**. Os dados não se perdem, mas a loja para até você reativar. Para evitar isso, o projeto já traz uma automação que acessa o banco a cada 2 dias:
+O plano gratuito do Supabase **pausa o projeto depois de 1 semana sem uso**. Os dados não se perdem, mas a loja para até você reativar. Para evitar isso, o projeto já traz uma automação que acessa o banco a cada 2 dias. **Não precisa configurar nada**: ela lê o endereço e a chave do `config.js`.
 
-1. No GitHub, abra **Settings → Secrets and variables → Actions → New repository secret** e crie:
-   - `SUPABASE_URL`: a Project URL
-   - `SUPABASE_KEY`: a Publishable key
-2. Na aba **Actions**, abra **Manter Supabase ativo** e clique em **Run workflow** para testar
+Para testar, abra a aba **Actions** do repositório, escolha **Manter Supabase ativo** e clique em **Run workflow**.
 
 ---
 
