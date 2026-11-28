@@ -12,11 +12,12 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Baixar o código
-        uses: actions/checkout@v4
-
       - name: Consultar produtos
+        env:
+          CONFIG_URL: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/config.js
         run: |
+          # baixa só o config.js do repositório (sem ações de terceiros)
+          curl -fsS --retry 3 "$CONFIG_URL" -o config.js
           URL=$(sed -nE "s/.*supabaseUrl:[[:space:]]*'([^']+)'.*/\1/p" config.js | head -1)
           KEY=$(sed -nE "s/.*supabaseKey:[[:space:]]*'([^']+)'.*/\1/p" config.js | head -1)
           # aceita a URL com ou sem / ou /rest/v1 no final
